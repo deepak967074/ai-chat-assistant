@@ -8,6 +8,8 @@ import Welcome from "./components/Welcome";
 import Messages from "./components/Messages";
 import ChatInput from "./components/ChatInput";
 
+const API_URL = "https://ai-chat-assistant-482r.onrender.com/api";
+
 function App() {
   const [message, setMessage] = useState("");
   const [chat, setChat] = useState([]);
@@ -29,7 +31,7 @@ function App() {
     setLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:8080/api/chat", {
+      const res = await axios.post(`${API_URL}/chat`, {
         threadId,
         message: userText,
       });
@@ -54,7 +56,7 @@ function App() {
 
   const fetchThreads = async () => {
     try {
-      const res = await axios.get("http://localhost:8080/api/thread");
+      const res = await axios.get(`${API_URL}/thread`);
       setHistory(res.data);
     } catch (error) {
       console.log("Failed to load history", error);
@@ -67,9 +69,7 @@ function App() {
 
   const openThread = async (item) => {
     try {
-      const res = await axios.get(
-        `http://localhost:8080/api/thread/${item.threadId}`,
-      );
+      const res = await axios.get(`${API_URL}/thread/${item.threadId}`);
 
       setChat(res.data);
       setThreadId(item.threadId);
@@ -89,7 +89,7 @@ function App() {
 
   const deleteHistory = async (threadId) => {
     try {
-      await axios.delete(`http://localhost:8080/api/thread/${threadId}`);
+      await axios.delete(`${API_URL}/thread/${threadId}`);
 
       setHistory((prev) => prev.filter((item) => item.threadId !== threadId));
 
