@@ -1,11 +1,9 @@
 import express from "express";
 import Thread from "../models/Thread.js";
-const router = express.Router();
 import getGeminiAPIResponse from "../utils/geminiAi.js";
 
-// test
+const router = express.Router();
 
-// Get all threads
 router.get("/thread", async (req, res) => {
   try {
     const threads = await Thread.find({}).sort({ updatedAt: -1 });
@@ -63,27 +61,38 @@ router.post("/chat", async (req, res) => {
     if (!thread) {
       thread = new Thread({
         threadId,
-        title: message,
-        messages: [{ role: "user", content: message }]
+        title: message.slice(0, 40),
+        messages: [],
       });
-    } else {
-      thread.messages.push({ role: "user", content: message });
     }
 
-    const assistantReply = await getGeminiAPIResponse(message);
+    thread.messages.push({
+      role: "user",
+      content: message,
+    });
+    // console.log("THREAD MESSAGES:");
+    // console.log(JSON.stringify(thread.messages, null, 2));
 
-    thread.messages.push({ role: "assistant", content: assistantReply });
-    thread.updatedAt = new Date();
+    const assistantReply = await getGeminiAPIResponse(thread.messages);
+
+    thread.messages.push({
+      role: "assistant",
+      content: assistantReply,
+    });
 
     await thread.save();
 
-    return res.json({ reply: assistantReply });
+    return res.json({
+      reply: assistantReply,
+      threadId: thread.threadId,
+    });
   } catch (err) {
     console.log("Gemini/API Error:", err.status, err.message);
 
     if (err.status === 429) {
       return res.status(429).json({
-        error: "Gemini quota khatam hai. Thodi der baad try karo ya dusri API key use karo.",
+        error:
+          "Gemini quota khatam hai. Thodi der baad try karo ya dusri API key use karo.",
       });
     }
 

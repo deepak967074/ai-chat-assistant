@@ -18,15 +18,32 @@ function App() {
   const [activeHistory, setActiveHistory] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const fetchThreads = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/thread`);
+      setHistory(res.data);
+    } catch (error) {
+      console.log("Failed to load history", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchThreads();
+  }, []);
+
   const sendMessage = async (text = message) => {
     if (!text.trim() || loading) return;
 
-    const userText = text;
-    const historyId = Date.now().toString();
+    const userText = text.trim();
 
-    setActiveHistory(historyId);
-    setHistory((prev) => [{ id: historyId, title: userText }, ...prev]);
-    setChat((prev) => [...prev, { role: "user", content: userText }]);
+    setChat((prev) => [
+      ...prev,
+      {
+        role: "user",
+        content: userText,
+      },
+    ]);
+
     setMessage("");
     setLoading(true);
 
@@ -38,8 +55,14 @@ function App() {
 
       setChat((prev) => [
         ...prev,
-        { role: "assistant", content: res.data.reply || "Reply nahi aaya" },
+        {
+          role: "assistant",
+          content: res.data.reply || "Reply nahi aaya",
+        },
       ]);
+
+      setActiveHistory(threadId);
+      fetchThreads();
     } catch (error) {
       setChat((prev) => [
         ...prev,
@@ -54,19 +77,6 @@ function App() {
     }
   };
 
-  const fetchThreads = async () => {
-    try {
-      const res = await axios.get(`${API_URL}/thread`);
-      setHistory(res.data);
-    } catch (error) {
-      console.log("Failed to load history", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchThreads();
-  }, []);
-
   const openThread = async (item) => {
     try {
       const res = await axios.get(`${API_URL}/thread/${item.threadId}`);
@@ -74,26 +84,30 @@ function App() {
       setChat(res.data);
       setThreadId(item.threadId);
       setActiveHistory(item.threadId);
+      setMessage("");
+      setLoading(false);
     } catch (error) {
       console.log("Failed to open chat", error);
     }
   };
 
   const newChat = () => {
+    const newThreadId = Date.now().toString();
+
+    setThreadId(newThreadId);
     setChat([]);
     setMessage("");
     setActiveHistory(null);
-    setThreadId(Date.now().toString());
     setLoading(false);
   };
 
-  const deleteHistory = async (threadId) => {
+  const deleteHistory = async (id) => {
     try {
-      await axios.delete(`${API_URL}/thread/${threadId}`);
+      await axios.delete(`${API_URL}/thread/${id}`);
 
-      setHistory((prev) => prev.filter((item) => item.threadId !== threadId));
+      setHistory((prev) => prev.filter((item) => item.threadId !== id));
 
-      if (activeHistory === threadId) {
+      if (activeHistory === id || threadId === id) {
         newChat();
       }
     } catch (error) {
